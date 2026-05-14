@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  linkedInUrl String?
+  createdAt   DateTime @default(now())
+  profile     Profile?
+  matches     Match[]  @relation("UserMatches")
+  matchedBy   Match[]  @relation("MatchedUser")
+}
+
+model Profile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id])
+  role            String
+  company         String?
+  industry        String?
+  skills          String
+  interests       String
+  networkingGoal  String
+  lookingFor      String
+  canOffer        String
+  preferredTopics String?
+  availability    String?
+  rawLinkedIn     String?
+  twinSummary     String?
+  embedding       String?
+}
+
+model Match {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("UserMatches", fields: [userId], references: [id])
+  matchedUserId String
+  matchedUser   User     @relation("MatchedUser", fields: [matchedUserId], references: [id])
+  score         Float
+  reason        String
+  enrichment    String?
+  createdAt     DateTime @default(now())
+  starters      ConversationStarter[]
+  conversation  Conversation?
+}
+
+model ConversationStarter {
+  id      String @id @default(cuid())
+  matchId String
+  match   Match  @relation(fields: [matchId], references: [id])
+  text    String
+  order   Int
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  matchId   String   @unique
+  match     Match    @relation(fields: [matchId], references: [id])
+  messages  String
+  decision  Boolean  @default(false)
+  summary   String?
+  createdAt DateTime @default(now())
+}
