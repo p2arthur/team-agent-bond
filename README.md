@@ -1,93 +1,62 @@
 # Agent Bond
 
-Your AI-powered networking twin for events.
+**Meet the right people at an event, with a reason to start the conversation.**
 
-## Overview
+Agent Bond turns an attendee's background and networking goals into an AI networking twin. It shortlists relevant people with embeddings, then simulates conversations between twins to explore whether a meeting would be useful. Attendees can inspect the reasoning, save connections, and open a prefilled calendar invitation.
 
-At conferences and events, people often struggle to find the right people to meet, start meaningful conversations, and make the most of networking opportunities.
+Built with a team at **Web Summit Vancouver**. This repository contains the hackathon application: a Next.js interface, API routes, and a SQLite data model.
 
-Agent Bond is an AI-powered networking agent that acts as a lightweight digital twin for each attendee. It helps users describe who they are, what they are looking for, and who they should connect with at the event.
+## From a bio to a meeting
 
-## Quick Start
+1. Paste a professional bio and review the extracted profile, skills, goals, and what you can offer.
+2. Generate a short twin summary and a profile embedding.
+3. Browse candidate matches or run a twin conversation. The batch matching path shortlists six candidates by cosine similarity before evaluating conversations.
+4. Read the exchange and meeting verdict, save a connection, and use the scheduling interface.
 
-```bash
-# 1. Clone and setup
-git clone <repo>
-cd agent-bond
-npm install
+The conversation endpoint streams messages and a verdict as server-sent events. The Google Calendar integration creates a prefilled event link; the attendee still reviews and saves the event in Google Calendar.
 
-# 2. Add environment variables
-echo 'DATABASE_URL="file:./dev.db"' > .env.local
-echo 'OPENROUTER_API_KEY="your-key-here"' >> .env.local
+## Run locally
 
-# 3. Setup database
-npx prisma db push
-npx prisma generate
+Use a current Node.js version supported by Next.js 16, npm, and an OpenRouter API key with access to the configured chat and embedding models.
 
-# 4. Run development server
+```sh
+git clone https://github.com/p2arthur/team-agent-bond.git
+cd team-agent-bond
+npm ci
+```
+
+Create **`.env`** in the repository root so both Prisma CLI and Next.js can read it:
+
+```dotenv
+DATABASE_URL="file:./dev.db"
+OPENROUTER_API_KEY="replace-with-your-key"
+```
+
+```sh
+npm run db:generate
+npm run db:push
 npm run dev
 ```
 
-Visit `http://localhost:3000` and click "Load Sample Attendees" to get started!
+Open [localhost:3000](http://localhost:3000). Use **Load Sample Attendees** for a demonstration, then create your own profile. Loading samples clears existing users, profiles, matches, and conversations in the configured database. Use a disposable local database for this flow.
 
-## Features
+Profile and conversation operations send their inputs to OpenRouter. Sample-data loading also requests embeddings. The model configuration lives in [`src/lib/openrouter.ts`](src/lib/openrouter.ts): `xiaomi/mimo-v2-flash` for chat and `openai/text-embedding-3-small` for embeddings.
 
-- **AI Profile Extraction** — Paste your LinkedIn bio and AI extracts your profile
-- **Digital Twin Generation** — AI creates a concise networking identity summary
-- **Smart Matching** — Hybrid vector + LLM matching finds the best connections
-- **Conversation Starters** — Get 3 suggested openers for each match
-- **Calendar Booking** — One-click Google Calendar event creation
+## Inside the application
 
-## Documentation
+| Area | Implementation |
+| --- | --- |
+| Interface | Next.js 16 App Router, React 19, Tailwind CSS 4, shadcn/ui |
+| Profile extraction and twins | [`src/lib/`](src/lib/) and [`src/app/api/profile/`](src/app/api/profile/) |
+| Candidate retrieval and evaluation | [`src/lib/matching.ts`](src/lib/matching.ts) |
+| Conversation streaming | [`src/app/api/twin-conversation/route.ts`](src/app/api/twin-conversation/route.ts) |
+| Persistence | Prisma 6 and [`prisma/schema.prisma`](prisma/schema.prisma) |
+| Calendar handoff | [`src/app/api/calendar-link/route.ts`](src/app/api/calendar-link/route.ts) |
 
-- **Design Document:** `docs/superpowers/specs/2026-05-12-agent-bond-design.md`
-- **Implementation Plan:** `docs/superpowers/plans/2026-05-12-agent-bond.md`
-- **Team Onboarding:** `docs/team/onboarding.md`
-- **Project Conventions:** `docs/team/AGENTS.md`
+`npm run build` creates a production build, and `npm start` serves it. `npm run db:studio` opens the local database browser.
 
-## Tech Stack
+## Project status
 
-- **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
-- **Database:** SQLite via Prisma ORM
-- **AI:** OpenRouter (GPT-4o-mini + embeddings)
-- **Styling:** Tailwind CSS
+This is an event prototype. It demonstrates the matching and networking flow, but does not establish production access controls, private attendee handling, or guaranteed match quality. The checked-in implementation is the reference for current behavior; earlier planning documents describe additional ideas and older stack versions.
 
-## Environment Variables
-
-```env
-DATABASE_URL="file:./dev.db"
-OPENROUTER_API_KEY="sk-or-your-key-here"
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npx prisma db push` | Push schema changes |
-| `npx prisma generate` | Regenerate Prisma client |
-| `npx prisma studio` | Browse database |
-| `curl -X POST http://localhost:3000/api/seed` | Load sample data |
-
-## Demo Flow
-
-1. Click "Load Sample Attendees" on the landing page
-2. Click "Get Started" and create your profile
-3. Paste your LinkedIn bio and let AI extract your profile
-4. Review and edit the extracted information
-5. Generate your digital twin
-6. Find your matches and view connection details
-7. Book meetings with your top matches
-
-## Next Steps
-
-- [ ] Complete implementation following the plan
-- [ ] Deploy to Vercel
-- [ ] Add real attendee data
-- [ ] Enhance with more AI features
-
-## License
-
-MIT
+See the [design brief](docs/superpowers/specs/2026-05-12-agent-bond-design.md) and [team onboarding](docs/team/onboarding.md) for background.
